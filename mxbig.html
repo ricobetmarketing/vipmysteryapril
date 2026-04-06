@@ -250,20 +250,19 @@ let spinning=false;
 /* UTC-6 CHECK */
 function isVipDayEndedUTC6(){
 
-const now=new Date();
+  const now = new Date();
 
-/* convert to UTC */
-const utc=now.getTime()+(now.getTimezoneOffset()*60000);
+  // convert to UTC
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
 
-/* convert to UTC-6 */
-const utc6=new Date(utc+(-6*60*60000));
+  // convert to UTC-6
+  const utc6 = new Date(utc + (-6 * 60 * 60000));
 
-const day=utc6.getDate();
+  const day = utc6.getDate();
 
-return day=>END_DAY_UTC6;
+  return day >= END_DAY_UTC6;
 
 }
-
 function computeCardWidth(){
 const first=track.querySelector(".prize-card");
 if(!first)return;
