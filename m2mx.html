@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Carga de Energía VIP – Alta Fidelidad</title>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@600;800;1000&display=swap" rel="stylesheet">
+
+<style>
+:root{
+--bg:#0a091a;
+--accent:#ff75e2;
+--mint:#00ffaa;
+--text:#f6f6ff;
+--stroke: rgba(255,255,255,.12);
+--shadow: 0 26px 70px rgba(0,0,0,.85);
+--glass: rgba(255,255,255,.07);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;margin:0;overflow:hidden;touch-action:manipulation;}
+
+body{
+font-family:Inter,system-ui,sans-serif;
+color:var(--text);
+background:
+radial-gradient(1000px 560px at 50% -10%, rgba(255,117,226,.2), transparent 60%),
+linear-gradient(180deg,var(--bg),#05050a);
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.wrap{
+width:min(560px,95%);
+border-radius:34px;
+border:1px solid var(--stroke);
+background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.02));
+box-shadow:var(--shadow);
+padding:34px 20px 26px;
+text-align:center;
+backdrop-filter:blur(10px);
+}
+
+.topBadge{
+display:inline-flex;
+align-items:center;
+gap:10px;
+padding:8px 14px;
+border-radius:999px;
+border:1px solid rgba(255,255,255,.1);
+background:rgba(0,0,0,.3);
+font-weight:900;
+letter-spacing:1.6px;
+font-size:11px;
+color:var(--accent);
+}
+
+.dot{
+width:8px;
+height:8px;
+border-radius:50%;
+background:var(--accent);
+box-shadow:0 0 10px var(--accent);
+}
+
+h1{
+font-family:Orbitron;
+font-size:28px;
+margin:15px 0 5px;
+background:linear-gradient(180deg,#fff,var(--accent));
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
+}
+
+.sub{
+margin:0 auto 20px;
+font-weight:600;
+font-size:13px;
+color:rgba(255,255,255,.6);
+line-height:1.5;
+}
+
+.panel{
+margin-top:20px;
+border-radius:26px;
+border:1px solid rgba(255,255,255,.08);
+background:rgba(0,0,0,.4);
+padding:25px 20px;
+overflow:hidden;
+}
+
+.bar-container{
+height:32px;
+border-radius:16px;
+background:#000;
+border:1px solid rgba(255,255,255,0.15);
+overflow:hidden;
+margin-bottom:20px;
+}
+
+.barFill{
+height:100%;
+width:0%;
+border-radius:16px;
+background:linear-gradient(90deg,#00ffaa,#00e5ff,#ff75e2,#ff00c1);
+background-size:300% 100%;
+transition:width .1s linear;
+}
+
+.hud{
+display:flex;
+justify-content:space-between;
+margin-bottom:8px;
+font-family:Orbitron;
+}
+
+.label{font-size:10px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;}
+.pct{font-size:16px;color:#fff;}
+
+.chargeBtn{
+width:100%;
+border:none;
+cursor:pointer;
+padding:20px;
+border-radius:20px;
+font-weight:900;
+letter-spacing:2px;
+font-size:14px;
+background:#fff;
+color:#000;
+}
+
+.instructions{
+font-size:12px;
+margin-bottom:15px;
+font-weight:800;
+letter-spacing:1px;
+color:var(--mint);
+text-transform:uppercase;
+}
+
+#overlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.95);
+backdrop-filter:blur(20px);
+z-index:100;
+align-items:center;
+justify-content:center;
+}
+
+.modal{
+background:#fff;
+color:#111;
+padding:40px 30px;
+border-radius:30px;
+text-align:center;
+width:90%;
+max-width:400px;
+}
+
+.bigPrize{
+font-family:Orbitron;
+font-size:24px;
+color:#ff00c1;
+margin:15px 0;
+font-weight:900;
+}
+
+.codeBox{
+background:#f4f4f4;
+border:2px dashed #ddd;
+padding:15px;
+border-radius:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.copyBtn{
+background:#000;
+color:#fff;
+border:none;
+padding:10px 18px;
+border-radius:10px;
+cursor:pointer;
+font-weight:900;
+}
+
+.disabled{
+pointer-events:none;
+opacity:.5;
+filter:grayscale(1);
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+<div class="topBadge"><span class="dot"></span> SISTEMA VIP ACTIVO</div>
+
+<h1>CARGA DE ENERGÍA</h1>
+<p class="sub">Mantén presionado el gatillo para aprovechar el núcleo de plasma.<br>Alcanza <b>100%</b> para obtener tu recompensa.</p>
+
+<div class="panel" id="panel">
+
+<div class="hud">
+<div class="label">NÚCLEO DEL REACTOR</div>
+<div class="pct" id="pctText">0%</div>
+</div>
+
+<div class="bar-container">
+<div class="barFill" id="barFill"></div>
+</div>
+
+<div class="instructions" id="instruction">LISTO PARA LA IGNICIÓN</div>
+
+<button class="chargeBtn"
+onpointerdown="startCharge(event)"
+onpointerup="stopCharge(event)"
+onpointerleave="stopCharge(event)">
+INICIAR CARGA
+<small>MANTÉN PRESIONADO PARA MANTENER EL VOLTAJE</small>
+</button>
+
+<div id="statusText" style="font-size:11px;margin-top:15px;opacity:.6"></div>
+
+</div>
+</div>
+
+<div id="overlay">
+<div class="modal">
+
+<div style="font-size:10px;font-weight:900;letter-spacing:2px;opacity:.5">
+REACCIÓN COMPLETADA
+</div>
+
+<div class="bigPrize">MISIÓN 2 COMPLETADA</div>
+
+<div class="codeBox">
+<div style="font-family:monospace;font-size:20px;font-weight:900" id="codeText">-----</div>
+<button class="copyBtn" onclick="copyCode()">COPIAR</button>
+</div>
+
+<p style="font-size:12px;margin-top:15px;font-weight:600;color:#666">
+Canjea en la sección <b>Código de Bono</b>.
+</p>
+
+</div>
+</div>
+
+<script>
+
+const EVENT_END = new Date("2026-03-16T00:00:00-06:00").getTime();
+
+const LS_KEY="vip_energy_mission2_claim_v2";
+const VOUCHER_CODES=["gxT9KO","MMG7S2","HyEGwf"];
+
+let charge=0;
+let charging=false;
+let timer=null;
+let hasUnlocked=false;
+
+const panel=document.getElementById("panel");
+const barFill=document.getElementById("barFill");
+const pctText=document.getElementById("pctText");
+const instruction=document.getElementById("instruction");
+const statusText=document.getElementById("statusText");
+const overlay=document.getElementById("overlay");
+const codeText=document.getElementById("codeText");
+
+/* EVENT LOCK */
+
+if(Date.now()>=EVENT_END){
+
+panel.classList.add("disabled");
+instruction.textContent="EVENTO FINALIZADO";
+statusText.textContent="Vuelve en el próximo VIP Day.";
+
+}
+
+/* DEVICE LOCK */
+
+const claimedCode=localStorage.getItem(LS_KEY);
+
+if(claimedCode && Date.now()<EVENT_END){
+
+hasUnlocked=true;
+panel.classList.add("disabled");
+instruction.textContent="YA RECLAMADO EN ESTE DISPOSITIVO";
+
+}
+
+function startCharge(e){
+
+if(e)e.preventDefault();
+
+if(hasUnlocked||Date.now()>=EVENT_END)return;
+
+charging=true;
+
+if(!timer){
+
+timer=setInterval(()=>{
+
+if(!charging)return;
+
+charge=Math.min(100,charge+1.8);
+render();
+
+if(charge>=100)unlock();
+
+},50);
+
+}
+
+}
+
+function stopCharge(e){
+
+if(e)e.preventDefault();
+
+if(hasUnlocked||Date.now()>=EVENT_END)return;
+
+charging=false;
+
+if(charge<100){
+
+charge=0;
+render();
+instruction.textContent="VOLTAJE PERDIDO - INTENTA DE NUEVO";
+
+}
+
+}
+
+function render(){
+
+const val=Math.round(charge);
+pctText.textContent=val+"%";
+barFill.style.width=charge+"%";
+
+}
+
+function unlock(){
+
+if(hasUnlocked)return;
+
+hasUnlocked=true;
+
+clearInterval(timer);
+timer=null;
+
+const code=pickVoucherCode();
+codeText.textContent=code;
+
+confetti({particleCount:150,spread:70,origin:{y:.6}});
+
+overlay.style.display="flex";
+
+panel.classList.add("disabled");
+instruction.textContent="YA RECLAMADO EN ESTE DISPOSITIVO";
+
+}
+
+function pickVoucherCode(){
+
+const existing=localStorage.getItem(LS_KEY);
+if(existing)return existing;
+
+const code=VOUCHER_CODES[Math.floor(Math.random()*VOUCHER_CODES.length)];
+
+localStorage.setItem(LS_KEY,code);
+return code;
+
+}
+
+function copyCode(){
+
+const txt=codeText.innerText;
+
+navigator.clipboard.writeText(txt).then(()=>{
+
+const btn=document.querySelector(".copyBtn");
+btn.innerText="¡COPIADO!";
+
+setTimeout(()=>btn.innerText="COPIAR",2000);
+
+});
+
+}
+
+</script>
+
+</body>
+</html>
