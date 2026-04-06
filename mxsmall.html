@@ -233,10 +233,27 @@ body{
 </div>
 
 <script>
+/** ======================
+ *  CONFIG
+ *  ====================== */
 const FIXED_CODE = "PZWOMF";
 const STORAGE_KEY = "vip_spin_locked_mxsmall";
+
+/* Bloqueia a partir do dia 16 00:00 no fuso UTC-3 */
 const END_DAY_UTC6 = 16;
 
+const prizes = [
+  { img:"https://ricomx.ft-crm.com/media-api/serve/1a457da2-bdef-4c84-8202-dc91887883d4_photo_6084903068915928886_x.jpg" },
+  { img:"https://ricomx.ft-crm.com/media-api/serve/c2b75030-9799-4956-958d-e22f7be3a408_photo_6084903068915928887_x.jpg" },
+  { img:"https://ricomx.ft-crm.com/media-api/serve/32ac2add-c52a-418f-9cf9-9fde69416566_photo_6084903068915928885_x.jpg" },
+  { img:"https://ricomx.ft-crm.com/media-api/serve/2f4f7c2d-2e7d-4151-b5f5-4691912d44ab_photo_6084903068915928884_x.jpg" }
+];
+
+const FORCED_INDEX = 1;
+
+/** ======================
+ *  ELEMENTOS
+ *  ====================== */
 const track = document.getElementById("track");
 const spinBtn = document.getElementById("spin-btn");
 const promoCodeEl = document.getElementById("promo-code");
@@ -245,119 +262,209 @@ const copyBtn = document.getElementById("copy-btn");
 const toast = document.getElementById("toast");
 const modalTitle = document.getElementById("modal-title");
 
-let spinning=false;
+let cardWidth = 174;
+let spinning = false;
 
-/* UTC-6 check */
+/** ======================
+ *  VERIFICAÇÃO DE FIM UTC-3
+ *  ====================== */
 function isVipDayEndedUTC6(){
-  const now=new Date();
-  const utcMs=now.getTime()+(now.getTimezoneOffset()*60000);
-  const utc6Ms=utcMs+(-6*60*60000);
-  const d=new Date(utc6Ms);
-  return d.getDate()>= END_DAY_UTC6;
+  const now = new Date();
+  const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const utc3Ms = utcMs + (-6 * 60 * 60000);
+  const d = new Date(utc3Ms);
+
+return d.getDate() >= END_DAY_UTC6;
 }
 
-/* storage */
+/** ======================
+ *  CÁLCULO RESPONSIVO
+ *  ====================== */
+function computeCardWidth(){
+  const first = track.querySelector(".prize-card");
+  if(!first) return;
+  const cs = getComputedStyle(first);
+  const w = first.getBoundingClientRect().width;
+  const ml = parseFloat(cs.marginLeft) || 0;
+  const mr = parseFloat(cs.marginRight) || 0;
+  cardWidth = w + ml + mr;
+}
+
+/** ======================
+ *  STORAGE
+ *  ====================== */
 function getSaved(){
   try{
-    const raw=localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw) return null;
     return JSON.parse(raw);
-  }catch(e){return null;}
+  }catch(e){
+    return null;
+  }
 }
 
 function saveLocked(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify({
-    code:FIXED_CODE,
-    ts:Date.now()
-  }));
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      code: FIXED_CODE,
+      ts: Date.now()
+    }));
+  }catch(e){}
 }
 
-/* UI */
+/** ======================
+ *  UI
+ *  ====================== */
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>toast.classList.remove("show"), 1100);
+}
+
 function showModalWithCode(){
-  modalTitle.textContent="¡FELICIDADES!";
-  promoCodeEl.innerText=FIXED_CODE;
-  copyBtn.style.display="block";
-  modalOverlay.style.display="flex";
+  modalTitle.textContent = "PARABÉNS!";
+  promoCodeEl.innerText = FIXED_CODE;
+  copyBtn.style.display = "block";
+  modalOverlay.style.display = "flex";
 }
 
 function lockUI(){
-  spinBtn.disabled=true;
-  spinBtn.textContent="YA JUGASTE";
+  spinBtn.disabled = true;
+  spinBtn.textContent = "JÁ PARTICIPOU";
 }
 
+function lockToSavedResult(saved){
+  lockUI();
+  showModalWithCode();
+  track.style.transition = "none";
+  track.style.transform = "translateX(0)";
+  spinning = false;
+}
+
+/* Tela de encerramento */
 function lockEndedUI(){
-  spinBtn.disabled=true;
-  spinBtn.textContent="DÍA VIP FINALIZADO";
+  spinBtn.disabled = true;
+  spinBtn.textContent = "DIA VIP ENCERRADO";
 
-  modalTitle.textContent="🔒 DÍA VIP FINALIZADO";
-  promoCodeEl.innerText="El Día VIP ha finalizado. Vuelve el próximo mes.";
-  copyBtn.style.display="none";
-
-  modalOverlay.style.display="flex";
+  modalTitle.textContent = "DIA VIP ENCERRADO";
+  promoCodeEl.innerText = "O Dia VIP acabou. Volte novamente no próximo mês.";
+  copyBtn.style.display = "none";
+  modalOverlay.style.display = "flex";
 }
 
-/* init */
+/** ======================
+ *  INIT
+ *  ====================== */
 function init(){
+  for(let i=0;i<80;i++){
+    const prize = prizes[i % prizes.length];
+    const card = document.createElement("div");
+    card.className = "prize-card";
+    card.innerHTML = `<img src="${prize.img}" alt="">`;
+    track.appendChild(card);
+  }
+
+  computeCardWidth();
+  window.addEventListener("resize", computeCardWidth);
 
   if(isVipDayEndedUTC6()){
     lockEndedUI();
     return;
   }
 
-  const saved=getSaved();
-  if(saved){
-    lockUI();
-    showModalWithCode();
+  const saved = getSaved();
+  if(saved && saved.code){
+    lockToSavedResult(saved);
   }
 }
 
-/* spin */
+/** ======================
+ *  GIRAR
+ *  ====================== */
 function spinWheel(){
-
   if(isVipDayEndedUTC6()){
     lockEndedUI();
     return;
   }
 
-  const saved=getSaved();
-  if(saved){
-    lockUI();
-    showModalWithCode();
+  const saved = getSaved();
+  if(saved && saved.code){
+    lockToSavedResult(saved);
     return;
   }
 
   if(spinning) return;
+  spinning = true;
+  spinBtn.disabled = true;
 
-  spinning=true;
+  computeCardWidth();
+
+  const base = 60 + Math.floor(Math.random() * 10);
+  const targetIndex = base - (base % prizes.length) + FORCED_INDEX;
+
+  const containerWidth = document.querySelector(".carousel-container").offsetWidth;
+  const centerPoint = containerWidth / 2;
+  const finalOffset = (targetIndex * cardWidth) + (cardWidth / 2) - centerPoint;
+
+  track.style.transition = "transform 4s cubic-bezier(0.12,0,0.08,1)";
+  track.style.transform = `translateX(-${finalOffset}px)`;
 
   setTimeout(()=>{
-
     confetti({
-      particleCount:150,
-      spread:70,
-      origin:{y:0.6}
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ff75e2', '#ffffff']
     });
 
     saveLocked();
     showModalWithCode();
     lockUI();
-
-    spinning=false;
-
-  },2000);
-
+    spinning = false;
+  }, 4100);
 }
 
-/* copy */
+/** ======================
+ *  COPIAR
+ *  ====================== */
 async function copyCode(){
+  const text = FIXED_CODE;
+
   try{
-    await navigator.clipboard.writeText(FIXED_CODE);
-    toast.classList.add("show");
-    setTimeout(()=>toast.classList.remove("show"),1000);
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      showToast("Copiado!");
+      return;
+    }
   }catch(e){}
+
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.left = "-9999px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+
+    if(ok){
+      showToast("Copiado!");
+    }else{
+      showToast("Toque e segure para copiar");
+    }
+  }catch(e){
+    showToast("Toque e segure para copiar");
+  }
 }
 
-copyBtn.addEventListener("click",copyCode);
+copyBtn.addEventListener("click", copyCode);
 
 init();
 </script>
